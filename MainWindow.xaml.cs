@@ -12,6 +12,9 @@ using System.Windows.Media;
 using MOverlay;
 using System.Collections.Generic;
 using System.Windows.Threading;
+using System.Threading;
+using System.Windows.Input;
+using System.Xml.Linq;
 
 namespace MOverlay
 {
@@ -22,21 +25,32 @@ namespace MOverlay
     {
         private IntPtr gameWindowHandle;
         private List<VideoStreamRectangle> Elements;
+        BitmapSource currFrame;
+
         public MainWindow()
         {
             InitializeComponent();
-            MainCanvas.Background = System.Windows.Media.Brushes.White;
             Elements = CreateInitialElements();
+            currFrame = Imaging.CreateBitmapSourceFromHBitmap(new Bitmap(24, 24, System.Drawing.Imaging.PixelFormat.Format24bppRgb).GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            MainCanvas.Background = System.Windows.Media.Brushes.Transparent;
             foreach (var element in Elements)
             {
+                element.VideoStreamBrush.ImageSource = currFrame;
                 MainCanvas.Children.Add(element);
             }
-            
+
+
             // Get the handle of the game window
             Process[] processes = Process.GetProcessesByName("Gw2-64");
             if (processes.Length > 0)
             {
-                Debug.WriteLine("Found processes: "+processes.Length);
+                Debug.WriteLine("Found processes: " + processes.Length);
                 gameWindowHandle = processes[0].MainWindowHandle;
                 // Make the window topmost
                 Topmost = true;
@@ -48,6 +62,8 @@ namespace MOverlay
                 Height = MainCanvas.Height = gameWindowRect.Bottom - gameWindowRect.Top;
                 Left = gameWindowRect.Left;
                 Top = gameWindowRect.Top;
+                Debug.WriteLine("Width: " + (gameWindowRect.Right - gameWindowRect.Left));
+                Debug.WriteLine("Height: " + (gameWindowRect.Bottom - gameWindowRect.Top));
 
                 // Set the position and size of the window
                 var helper = new WindowInteropHelper(this);
@@ -60,39 +76,34 @@ namespace MOverlay
                 gameWindowCapture.NewFrame += new NewFrameEventHandler(video_NewFrame);
 
 
-
                 gameWindowCapture.Start();
 
-            } else
+            }
+            else
             {
                 Debug.WriteLine("Found no Processes");
             }
-        }
 
-        protected override void OnSourceInitialized(EventArgs e)
-        {
-            base.OnSourceInitialized(e);
+
 
             
-
         }
 
         private void video_NewFrame(object sender, NewFrameEventArgs eventArgs)
         {
+            Debug.WriteLine("New Frame");
             try
             {
-                Bitmap bitmap = (Bitmap)eventArgs.Frame.Clone();
-                BitmapSource bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                var operation = () => UpdateAllElements(bitmapSource);
-                if (operation == null) return;
-                if (Dispatcher.CheckAccess())
+                Dispatcher.Invoke(() =>
                 {
-                    operation();
-                }
-                else
-                {
-                    Dispatcher.BeginInvoke(operation);
-                }
+                    Bitmap bitmap = (Bitmap)eventArgs.Frame.Clone();
+                    currFrame = Imaging.CreateBitmapSourceFromHBitmap(bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+
+                    UpdateAllElements();
+                    Debug.WriteLine("Updated Frames");
+                });
+                
+                // 
             }
             catch (Exception ex)
             {
@@ -102,17 +113,18 @@ namespace MOverlay
             
         }
 
-        private void UpdateAllElements(BitmapSource bitmapSource)
+        private void UpdateAllElements()
         {
 
-            foreach (var child in Elements)
+            foreach (var child in MainCanvas.Children)
             {
                 if (child is VideoStreamRectangle videoStreamRectangle)
                 {
                     Debug.WriteLine("Updating ImageSource");
-                    videoStreamRectangle.VideoStreamBrush.ImageSource = bitmapSource;
+                    videoStreamRectangle.VideoStreamBrush.ImageSource = currFrame;
                 }
             }
+
         }
 
 

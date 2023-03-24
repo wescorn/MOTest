@@ -5,7 +5,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:VideoStreamRectangle}">
-                    <Rectangle Fill="{TemplateBinding VideoStreamBrush}" />
+                    <Rectangle Stroke="Red" StrokeThickness="1" Fill="{TemplateBinding VideoStreamBrush}" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

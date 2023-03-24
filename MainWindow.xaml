@@ -8,9 +8,10 @@
         Title="MainWindow"
         WindowStyle="None"
         AllowsTransparency="True"
-        Background="Transparent"
         >
     <Canvas x:Name="MainCanvas">
-
+        <Rectangle Width="100" Height="100" Name="TestRect">
+            
+        </Rectangle>
     </Canvas>
 </Window>
