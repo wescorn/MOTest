@@ -15,6 +15,7 @@ using System.Windows.Threading;
 using System.Threading;
 using System.Windows.Input;
 using System.Xml.Linq;
+using System.IO;
 
 namespace MOverlay
 {
@@ -26,25 +27,26 @@ namespace MOverlay
         private IntPtr gameWindowHandle;
         private List<VideoStreamRectangle> Elements;
         BitmapSource currFrame;
-
+        ImageBrush testimg;
         public MainWindow()
         {
             InitializeComponent();
             Elements = CreateInitialElements();
             currFrame = Imaging.CreateBitmapSourceFromHBitmap(new Bitmap(24, 24, System.Drawing.Imaging.PixelFormat.Format24bppRgb).GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-
         }
 
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);
-            MainCanvas.Background = System.Windows.Media.Brushes.Transparent;
+            MainCanvas.Background = System.Windows.Media.Brushes.White;
+            MainCanvas.Opacity = .5;
             foreach (var element in Elements)
             {
                 element.VideoStreamBrush.ImageSource = currFrame;
                 MainCanvas.Children.Add(element);
             }
 
+            
 
             // Get the handle of the game window
             Process[] processes = Process.GetProcessesByName("Gw2-64");
@@ -94,12 +96,15 @@ namespace MOverlay
             Debug.WriteLine("New Frame");
             try
             {
-                Dispatcher.Invoke(() =>
+                Dispatcher.BeginInvoke(() =>
                 {
                     Bitmap bitmap = (Bitmap)eventArgs.Frame.Clone();
-                    currFrame = Imaging.CreateBitmapSourceFromHBitmap(bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    BitmapSource mcurrFrame = Imaging.CreateBitmapSourceFromHBitmap(bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                    currFrame = mcurrFrame;
+                    mcurrFrame.Freeze();
+                    SaveImageToFile(mcurrFrame, "mybfimage.png");
+                    UpdateAllElements(mcurrFrame);
 
-                    UpdateAllElements();
                     Debug.WriteLine("Updated Frames");
                 });
                 
@@ -113,16 +118,21 @@ namespace MOverlay
             
         }
 
-        private void UpdateAllElements()
+        private void UpdateAllElements(BitmapSource bms)
         {
 
             foreach (var child in MainCanvas.Children)
             {
                 if (child is VideoStreamRectangle videoStreamRectangle)
                 {
-                    Debug.WriteLine("Updating ImageSource");
-                    videoStreamRectangle.VideoStreamBrush.ImageSource = currFrame;
+                    Debug.WriteLine("Updating ImageSource: "+ currFrame.Width+"  |  "+currFrame.Height);
+                    videoStreamRectangle.VideoStreamBrush.ImageSource = bms;
+                    TestImgBrush.ImageSource = bms;
+
                 }
+                MainCanvas.UpdateLayout();
+
+
             }
 
         }
@@ -160,5 +170,19 @@ namespace MOverlay
             public int Right;
             public int Bottom;
         }
+
+
+        public static void SaveImageToFile(BitmapSource image, string filePath)
+        {
+            //var image = Clipboard.GetImage();
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                //encoder.Frames.Add(BitmapFrame.Create(image));
+                encoder.Frames.Add(BitmapFrame.Create(image));
+                encoder.Save(fileStream);
+            }
+        }
+
     }
 }

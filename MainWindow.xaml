@@ -8,10 +8,14 @@
         Title="MainWindow"
         WindowStyle="None"
         AllowsTransparency="True"
+        Background="Transparent"
         >
     <Canvas x:Name="MainCanvas">
-        <Rectangle Width="100" Height="100" Name="TestRect">
-            
+        <Rectangle Stroke="Blue" StrokeThickness="2" Canvas.Left="500" Canvas.Top="500" Width="1000" Height="1000" Name="TestRect">
+            <Rectangle.Fill>
+                <ImageBrush x:Name="TestImgBrush" Viewport="100, 100, 100, 100"/>
+            </Rectangle.Fill>
         </Rectangle>
+        
     </Canvas>
 </Window>

@@ -27,7 +27,7 @@ namespace MOverlay
         {
             canvas = (Canvas)this.Parent;
             MouseDown += OnVideoStreamRectangleMouseDown;
-            VideoStreamBrush = new ImageBrush() { Viewport = new Rect(0, 0, 1, 1) };
+            VideoStreamBrush = new ImageBrush() { Viewport = new Rect(0, 0, 1000, 1000) };
             
         }
 
@@ -40,7 +40,7 @@ namespace MOverlay
             Opacity = 1;
             Visibility = Visibility.Visible;
             Background = System.Windows.Media.Brushes.Gray;
-            VideoStreamBrush = new ImageBrush() { Viewport = new Rect(X, Y, W, H) };
+            VideoStreamBrush = new ImageBrush() { Viewport = new Rect(X, Y, W, H), Stretch=Stretch.UniformToFill, Opacity = 1 };
         }
 
         public static readonly DependencyProperty VideoStreamBrushProperty = DependencyProperty.Register(
